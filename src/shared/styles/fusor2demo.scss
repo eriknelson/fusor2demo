@@ -1,0 +1,13 @@
+@import 'config/colors';
+
+body {
+  background: $cb-bg;
+}
+
+.wrapper {
+  .header {
+    color: #FFF;
+    text-align: center;
+    margin: 25px 0;
+  }
+}
