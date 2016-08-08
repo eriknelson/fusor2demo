@@ -25,9 +25,41 @@ const rootReducer = combineReducers({
   tasks: tasksReducer
 });
 
+const socketMiddleware = socket => store => next => action => {
+  const socketAction = action.payload && action.payload.socket;
+  console.debug(`socketAction::${socketAction}`);
+
+  // TODO: Direct subscribe/unsubscribe handlers?
+  if(action.type === 'SOCKET_SUB') {
+  } else if(action.type === 'SOCKET_UNSUB') {
+  }
+
+  // Can attach a socket action to a CRUD operation
+  if(socketAction) {
+    const type = socketAction.type;
+
+    if(type === 'SUB') {
+      console.debug('subscribing to...', socketAction.event);
+      socket.on(socketAction.event, (data) => {
+        console.debug('SOCKET MIDDLEWARE TICK', data);
+        // TODO: Update state tree with socket payload
+      });
+    } else if(type === 'UNSUB'){
+      console.debug('unsubbing...', socketAction.event);
+      socket.off(socketAction.event);
+    } else {
+      throw 'ERROR: Unsupported socket action'
+    }
+  }
+
+  // No socket action, pass through
+  return next(action);
+}
+
 const store = createStore(
   rootReducer,
-  applyMiddleware(promiseMiddleware(), loggerMiddleware())
+  applyMiddleware(
+    promiseMiddleware(), socketMiddleware(socket), loggerMiddleware())
 );
 
 ////////////////////////////////////////////////////////////

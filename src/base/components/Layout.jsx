@@ -9,7 +9,7 @@ class Layout extends React.Component {
         <Grid>
           <Row>
             <Col xs={12}>
-              <h2 className="header">Fusor 2 Demo</h2>
+              <h2 className="header">Helloworld</h2>
               <Jumbotron>
                 <TasksDemo/>
               </Jumbotron>
