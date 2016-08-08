@@ -1,42 +1,69 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Button } from 'react-bootstrap';
+import { Button, Row, Col } from 'react-bootstrap';
+import faker from 'faker';
 
 import { taskActions } from '../actions';
 
 import '../styles/tasks.scss';
 
+const workBatch = 5;
+
 class TasksDemo extends Component {
   constructor(props) {
     super(props);
-
-    // Callback bindings
     this.startWork = this.startWork.bind(this);
   }
   startWork() {
-    // TOOD: create X tasks (action creator), and start listening
-    console.log('starting work clicked');
+    for(let i = 0; i < workBatch; ++i) {
+      this.props.createTask({name: faker.hacker.noun()});
+    }
   }
   render() {
-    return (
-      <div className="tasks-demo">
+    const {tasks} = this.props;
+    const taskContent = tasks.size > 0 ? () => {
+      return (
+        <div className="active-work">
+          <ul>
+            {tasks.toIndexedSeq().map((task) => {
+              return <li key={task.id}>{task.id} -> {task.name}</li>
+            })}
+          </ul>
+        </div>
+      );
+    } : () => {
+      return (
         <div className="pending-work">
           <h3>No tasks outstanding</h3>
-          <Button bsStyle="primary" bsSize="large" onClick={this.startWork}>
-            Start Work
-          </Button>
         </div>
+      );
+    };
+
+    return (
+      <div className="tasks-demo">
+        <Row>
+          <Col className="top-task-bar" xs={12}>
+            <Button bsStyle="primary" bsSize="large" onClick={this.startWork}>
+              Spawn Work
+            </Button>
+          </Col>
+        </Row>
+        {taskContent()}
       </div>
     );
   }
 }
 
-export default TasksDemo;
+const mapStateToProps = (state) => {
+  return {tasks: state.tasks};
+};
 
-//const mapStateToProps = (state) => {
-//};
+const mapDispatchToProps = (dispatch) => {
+  return {
+    createTask: (task) => {
+      return dispatch(taskActions.create(task));
+    }
+  }
+};
 
-//const mapDispatchToProp= (dispatch) => {
-//};
-
-//export default connect(mapStateToProps, mapDispatchToProps)(TasksDemo);
+export default connect(mapStateToProps, mapDispatchToProps)(TasksDemo);

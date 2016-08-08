@@ -1,10 +1,14 @@
 @import 'config/colors';
 
 .tasks-demo {
-  .pending-work {
-    button {
-      margin-top: 30px;
-    }
+  .top-task-bar {
+    text-align: center
+  }
+  .active-work {
+    margin-top: 20px;
+    border: 2px solid $cb-accent;
+    padding-top: 15px;
+    padding-bottom: 10px;
   }
 }
 

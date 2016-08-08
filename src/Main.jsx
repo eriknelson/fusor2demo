@@ -8,14 +8,19 @@ import { combineReducers } from 'redux';
 import tasksReducer from './tasks/reducer';
 import Layout from './base/components/Layout';
 
-////////////////////////////////////////////////////////////
-// Global Stylesheet
 import './shared/styles/fusor2demo.scss';
+
 ////////////////////////////////////////////////////////////
+// socket.io
+////////////////////////////////////////////////////////////
+import io from 'socket.io-client';
+const socket = io();
+socket.on('message', (msg) => console.log('got message -> ', msg));
 
 ////////////////////////////////////////////////////////////
 // Store Setup
 ////////////////////////////////////////////////////////////
+const defaultState = {};
 const rootReducer = combineReducers({
   tasks: tasksReducer
 });
