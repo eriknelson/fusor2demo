@@ -15,38 +15,37 @@ import './shared/styles/fusor2demo.scss';
 ////////////////////////////////////////////////////////////
 import io from 'socket.io-client';
 const socket = io();
+
 socket.on('message', (msg) => console.log('got message -> ', msg));
-
-////////////////////////////////////////////////////////////
-// Store Setup
-////////////////////////////////////////////////////////////
-const defaultState = {};
-const rootReducer = combineReducers({
-  tasks: tasksReducer
-});
-
 const socketMiddleware = socket => store => next => action => {
-  const socketAction = action.payload && action.payload.socket;
-  console.debug(`socketAction::${socketAction}`);
+  const rx = /^([a-z]*?).([A-Z]*?)_FULFILLED/;
+  const match = rx.exec(action.type);
+  const isFulfilledPromise = !!match;
 
-  // TODO: Direct subscribe/unsubscribe handlers?
-  if(action.type === 'SOCKET_SUB') {
-  } else if(action.type === 'SOCKET_UNSUB') {
-  }
+  const socketMeta = action.meta && action.meta.socket;
+
+  // TODO: Explicit subscribe/unsubscribe handlers?
+  //if(action.type === 'SOCKET_SUB') {
+  //} else if(action.type === 'SOCKET_UNSUB') {
+  //}
 
   // Can attach a socket action to a CRUD operation
-  if(socketAction) {
-    const type = socketAction.type;
+  if(isFulfilledPromise && socketMeta) {
+    const type = socketMeta.type;
+    const modelName = match[1];
+    const model = action.payload.data[modelName];
 
-    if(type === 'SUB') {
-      console.debug('subscribing to...', socketAction.event);
-      socket.on(socketAction.event, (data) => {
-        console.debug('SOCKET MIDDLEWARE TICK', data);
-        // TODO: Update state tree with socket payload
+    if(type === 'sub') {
+      socket.on(channel(modelName, model.id), (data) => {
+        // Update store with new data
+        const progress = data[modelName].progress;
+        store.dispatch({
+          type: socketMeta.updateAction,
+          payload: data[modelName]
+        })
       });
-    } else if(type === 'UNSUB'){
-      console.debug('unsubbing...', socketAction.event);
-      socket.off(socketAction.event);
+    } else if(type === 'unsub'){
+      console.debug('unsubbing promise?');
     } else {
       throw 'ERROR: Unsupported socket action'
     }
@@ -55,6 +54,18 @@ const socketMiddleware = socket => store => next => action => {
   // No socket action, pass through
   return next(action);
 }
+
+function channel(modelName, modelId) {
+  return `/${modelName}/${modelId}`;
+}
+
+////////////////////////////////////////////////////////////
+// Store Setup
+////////////////////////////////////////////////////////////
+const defaultState = {};
+const rootReducer = combineReducers({
+  tasks: tasksReducer
+});
 
 const store = createStore(
   rootReducer,
