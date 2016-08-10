@@ -2,12 +2,13 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Button, Row, Col } from 'react-bootstrap';
 import faker from 'faker';
+import Progress from 'react-progressbar';
 
 import { taskActions } from '../actions';
 
 import '../styles/tasks.scss';
 
-const workBatch = 1;
+const workBatch = 10;
 
 class TasksDemo extends Component {
   constructor(props) {
@@ -23,10 +24,21 @@ class TasksDemo extends Component {
     const {tasks} = this.props;
     const taskContent = tasks.size > 0 ? () => {
       return (
-        <div className="active-work">
+        <div className="active-work clearfix">
           <ul>
             {tasks.toIndexedSeq().map((task) => {
-              return <li key={task.id}>{task.id} -> {task.name}</li>
+              let liClassName = 'task-progress clearfix';
+              if(task.progress === 1) {
+                liClassName += " progress-complete";
+              }
+
+              return (
+                <li key={task.id} className={liClassName}>
+                  <Progress completed={displayPercentage(task.progress)} />
+                  <span className="progress-percentage">{`${displayPercentage(task.progress)}%`}</span>
+                  <span className="task-name">{task.name}</span>
+                </li>
+              )
             })}
           </ul>
         </div>
@@ -65,5 +77,9 @@ const mapDispatchToProps = (dispatch) => {
     }
   }
 };
+
+function displayPercentage(progress) {
+  return Math.round(progress * 100);
+}
 
 export default connect(mapStateToProps, mapDispatchToProps)(TasksDemo);
