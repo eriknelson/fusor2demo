@@ -10,8 +10,10 @@ const taskHandlers = I.Map({
     return state.push(task);
   },
   [taskActionTypes.UPDATE]: (state, action) => {
-    const task = action.payload.data.task;
-    return state.push(task.id, task);
+    const updatedTask = action.payload;
+    return state.map((task) => {
+      return task.id === updatedTask.id ? updatedTask : task;
+    });
   },
 });
 

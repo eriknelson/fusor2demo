@@ -4,11 +4,43 @@
   .top-task-bar {
     text-align: center
   }
+
   .active-work {
     margin-top: 20px;
     border: 2px solid $cb-accent;
     padding-top: 15px;
     padding-bottom: 10px;
+    ul {
+      float: left;
+      list-style-type: none;
+    }
+  }
+
+  .task-progress {
+    .task-name {
+      float: right;
+      margin-right: 20px;
+      font-weight: bold;
+    }
+    .progressbar-container {
+      float: right;
+      width: 300px;
+      border: 2px solid black;
+      margin: 0 20px;
+    }
+
+    .progress-percentage {
+      float: right;
+    }
+
+    .progressbar-progress {
+      background-color: $cb-accent !important;
+    }
+  }
+
+  .task-progress.progress-complete {
+    .progressbar-progress {
+      background-color: lime !important;
+    }
   }
 }
-
