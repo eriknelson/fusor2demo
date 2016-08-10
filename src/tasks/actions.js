@@ -4,21 +4,29 @@ import { baseUrl } from '../shared/api';
 const tasksUrl = `${baseUrl}/tasks`;
 
 const taskActionTypes = {
-  CREATE: 'tasks.CREATE',
-  CREATE_FULFILLED: 'tasks.CREATE_FULFILLED',
-  UPDATE: 'tasks.UPDATE'
+  CREATE: 'task.CREATE',
+  CREATE_FULFILLED: 'task.CREATE_FULFILLED',
+  UPDATE: 'task.UPDATE'
 };
 
 const taskActions = {
   create: (task) => {
+    console.log('creating task')
     return {
       type: taskActionTypes.CREATE,
-      payload: axios.post(tasksUrl, {task})
+      payload: axios.post(tasksUrl, {task}),
+      meta: {
+        socket: {
+          type: 'sub',
+          updateAction: taskActionTypes.UPDATE
+        }
+      }
     };
   },
-  update: () => {
+  update: (task) => {
     return {
-      type: taskActionTypes.UPDATE
+      type: taskActionTypes.UPDATE,
+      payload: task
     };
   }
 };
