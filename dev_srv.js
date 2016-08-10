@@ -1,11 +1,10 @@
 const path = require('path');
-
-////////////////////////////////////////////////////////////
-// Third-party helper libs
-////////////////////////////////////////////////////////////
+const os = require('os');
 const uuid = require('uuid4');
 const merge = require('merge');
+require('shelljs/global');
 
+const amqp = require('amqplib');
 const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -15,6 +14,9 @@ const config = require('./config/webpack.dev');
 const compiler = webpack(config);
 
 const bodyParser = require('body-parser');
+
+const tasks = {};
+
 app.use(bodyParser.json());
 
 app.use(require('webpack-dev-middleware')(compiler, {
@@ -23,87 +25,84 @@ app.use(require('webpack-dev-middleware')(compiler, {
 
 app.use(require('webpack-hot-middleware')(compiler));
 
-////////////////////////////////////////////////////////////
-// socket.io
-////////////////////////////////////////////////////////////
-io.on('connection', socket => {
-  console.log('user connected!');
-  socket.on('disconnect', () => console.log('user disconnected'));
-});
-////////////////////////////////////////////////////////////
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'templates', 'index.html'));
 });
 
-const tasks = {};
-app.post('/tasks', (req, res) => {
-  console.log(req.body);
-  executeNewTask(req.body.task).then(task => {
-    const newTaskId = task.id;
-    const tickToComplete = genTickToComplete();
-    const tickPeriod = genTickPeriod();
-
-    task.progress = 0;
-    newTask = {
-      task: task,
-      ticks: 0
-    };
-
-    res.send({task})
-
-    const tickf = () => {
-      const taskRecord = tasks[newTaskId];
-
-      if(taskRecord.ticks == tickToComplete) {
-        clearInterval(taskRecord.interval);
-        taskRecord.task.progress = 1;
-        io.emit(taskChannel(taskRecord.task), {task: taskRecord.task});
-        delete tasks[newTaskId].interval;
-        return;
-      }
-
-      const task = taskRecord.task;
-      task.progress = (taskRecord.ticks++ / tickToComplete).toPrecision(2);
-      io.emit(taskChannel(task), {task});
-    };
-
-    newTask['interval'] = setInterval(tickf, tickPeriod);
-    tasks[newTaskId] = newTask;
+function initSocketIo(done) {
+  console.log('initting socket io');
+  io.on('connection', socket => {
+    console.log('user connected!');
+    socket.on('disconnect', () => console.log('user disconnected'));
   });
-});
+  done(null, io);
+}
 
-const port = process.env.PORT || 3000;
-http.listen(port, 'localhost', err => {
-  if(err) {
-    console.log(err);
-    return;
-  }
+function initRabbit(done) {
+  console.log('initting rabbit');
+  const cxStr = 'amqp://localhost';
+  amqp.connect(cxStr).then(cx => {
+    cx.createChannel().then(channel => {
+      done(null, {
+        cx: cx,
+        channel: channel
+      })
+    })
+  }).catch(err => (function(){throw err})());
+}
 
-  console.log(`Listening at http://localhost:${port}`);
-});
+function main(err, deps) {
+  const io = deps.io;
+  const rabbitChannel = deps.rabbit.channel;
+
+  // Subscribe to task messages off rabbit
+  const taskQ = `${os.hostname()}.task`;
+  rabbitChannel.assertQueue(taskQ, { durable: false });
+  rabbitChannel.consume(taskQ, rawMsg => {
+    const msg = JSON.parse(rawMsg.content.toString());
+    //console.log(msg);
+    const task_id = msg.task_id;
+    const task = tasks[task_id];
+    if(task) {
+      task.progress = msg.progress;
+      io.emit(taskChannel(task_id), {task});
+    }
+  }, { noAck: true });
+
+  app.post('/tasks', (req, res) => {
+    executeNewTask(req.body.task).then(task => {
+      tasks[task.id] = task
+      res.send({task})
+    });
+  });
+
+  const port = process.env.PORT || 3000;
+  http.listen(port, 'localhost', err => {
+    if(err) {
+      console.log(err);
+      return;
+    }
+
+    console.log(`Listening at http://localhost:${port}`);
+  });
+}
 
 function executeNewTask(task) {
   return new Promise((res, rej) => {
     uuid((err, id) => {
+      const do_work = path.join(__dirname, `do_work.py ${id}`);
+      exec(do_work, { async:true });
       res(merge(task, {id}));
     });
   });
 }
 
-function genTickToComplete() {
-  return rand(7, 15);
+function taskChannel(task_id) {
+  return `/task/${task_id}`;
 }
 
-function genTickPeriod() {
-  return rand(500, 2000);
-}
-
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min) + min);
-}
-
-function taskChannel(task) {
-  return `/task/${task.id}`;
-}
-
+const a = require('async');
+a.parallel({
+  rabbit: initRabbit,
+  io: initSocketIo
+}, main);
