@@ -16,6 +16,8 @@ import './shared/styles/fusor2demo.scss';
 import io from 'socket.io-client';
 const socket = io();
 
+const subs = {};
+
 socket.on('message', (msg) => console.log('got message -> ', msg));
 const socketMiddleware = socket => store => next => action => {
   const rx = /^([a-z]*?).([A-Z]*?)_FULFILLED/;
@@ -36,14 +38,18 @@ const socketMiddleware = socket => store => next => action => {
     const model = action.payload.data[modelName];
 
     if(type === 'sub') {
-      socket.on(channel(modelName, model.id), (data) => {
-        // Update store with new data
-        const progress = data[modelName].progress;
-        store.dispatch({
-          type: socketMeta.updateAction,
-          payload: data[modelName]
-        })
-      });
+      console.log('subbing modelname... ' + modelName);
+
+      if(!(modelName in subs)) {
+        const cc = channel(modelName);
+        subs[modelName] = cc;
+        socket.on(cc, data => {
+          store.dispatch({
+            type: socketMeta.updateAction,
+            payload: data[modelName]
+          })
+        });
+      }
     } else if(type === 'unsub'){
       console.debug('unsubbing promise?');
     } else {
@@ -55,8 +61,8 @@ const socketMiddleware = socket => store => next => action => {
   return next(action);
 }
 
-function channel(modelName, modelId) {
-  return `/${modelName}/${modelId}`;
+function channel(modelName) {
+  return `/${modelName}`;
 }
 
 ////////////////////////////////////////////////////////////
@@ -70,7 +76,8 @@ const rootReducer = combineReducers({
 const store = createStore(
   rootReducer,
   applyMiddleware(
-    promiseMiddleware(), socketMiddleware(socket), loggerMiddleware())
+    //promiseMiddleware(), socketMiddleware(socket), loggerMiddleware())
+    promiseMiddleware(), socketMiddleware(socket))
 );
 
 ////////////////////////////////////////////////////////////

@@ -60,12 +60,11 @@ function main(err, deps) {
   rabbitChannel.assertQueue(taskQ, { durable: false });
   rabbitChannel.consume(taskQ, rawMsg => {
     const msg = JSON.parse(rawMsg.content.toString());
-    //console.log(msg);
     const task_id = msg.task_id;
     const task = tasks[task_id];
     if(task) {
       task.progress = msg.progress;
-      io.emit(taskChannel(task_id), {task});
+      io.emit(taskChannel(), {task});
     }
   }, { noAck: true });
 
@@ -97,8 +96,8 @@ function executeNewTask(task) {
   });
 }
 
-function taskChannel(task_id) {
-  return `/task/${task_id}`;
+function taskChannel() {
+  return `/task`;
 }
 
 const a = require('async');
