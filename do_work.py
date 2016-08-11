@@ -16,10 +16,10 @@ channel = cx.channel()
 channel.queue_declare(queue=TASK_Q)
 
 def gen_tick_count():
-    return randint(100, 101)
+    return randint(6, 17)
 
 def gen_tick_period():
-    return randint(100, 200) / 1000
+    return randint(500, 1200) / 1000
 
 def tick(task_id, progress):
     channel.basic_publish(
@@ -27,7 +27,6 @@ def tick(task_id, progress):
         routing_key=TASK_Q,
         body=json.dumps({"task_id": task_id, "progress": round(progress,2)})
     )
-    print "Ticked {0}".format(progress)
 
 def main():
     if len(sys.argv) < 2:
