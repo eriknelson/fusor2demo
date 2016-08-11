@@ -8,7 +8,7 @@ import { taskActions } from '../actions';
 
 import '../styles/tasks.scss';
 
-const workBatch = 10;
+const workBatch = 25;
 
 class TasksDemo extends Component {
   constructor(props) {
