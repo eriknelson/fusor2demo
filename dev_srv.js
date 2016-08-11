@@ -91,7 +91,7 @@ function executeNewTask(task) {
   return new Promise((res, rej) => {
     uuid((err, id) => {
       const do_work = path.join(__dirname, `do_work.py ${id}`);
-      exec(do_work, { async:true });
+      //exec(do_work, { async:true });
       res(merge(task, {id}));
     });
   });
