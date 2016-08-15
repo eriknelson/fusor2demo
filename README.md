@@ -6,6 +6,11 @@ Node/RabbitMQ/Python backend
 
 ### Requirements
 
+[Nodemon](http://nodemon.io/) will monitor files for changes and auto restart
+the server. It's a global install.
+
+`npm i -g nodemon`
+
 Node > 4.4.x
 
 `npm install` to pull node deps
